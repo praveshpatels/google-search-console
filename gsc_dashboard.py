@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer (Final Version with Plotly & Trendline)
+Google Search Console Data Analyzer
+Enhanced with CTR Trendline, Smart Table Toggle, and Keyword Alert System
 Developed by Pravesh Patel
 """
 
@@ -12,7 +13,7 @@ import plotly.graph_objects as go
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -20,22 +21,21 @@ st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📁 Upload GSC CSV file (Performance > Queries)", type=["csv"])
 
 if uploaded_file:
-    # Read the CSV content
+    # Read and parse CSV
     raw_data = uploaded_file.read().decode("utf-8")
     df = pd.read_csv(io.StringIO(raw_data))
 
-    # Normalize column names
+    # Normalize columns
     df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
     df.rename(columns={"top_queries": "query"}, inplace=True)
 
-    # Check required columns
     required_cols = ["query", "clicks", "impressions", "ctr", "position"]
     missing = [col for col in required_cols if col not in df.columns]
     if missing:
         st.error(f"❌ Missing columns: {', '.join(missing)}")
         st.stop()
 
-    # Clean numeric columns
+    # Clean numeric values
     for col in ["clicks", "impressions", "position"]:
         df[col] = df[col].astype(str).str.replace(",", "", regex=False)
         df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -45,7 +45,7 @@ if uploaded_file:
 
     df.dropna(subset=["clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-    # Optional filtering
+    # Filter controls
     with st.expander("🔍 Filter Data"):
         min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
         keyword_filter = st.text_input("Filter by Query (Optional)", "")
@@ -53,11 +53,17 @@ if uploaded_file:
         if keyword_filter:
             df = df[df["query"].str.contains(keyword_filter, case=False, na=False)]
 
-    # Show raw data
+    # Smart raw data table
     if st.checkbox("📄 Show Raw Data"):
-        st.dataframe(df.head(25), use_container_width=True)
+        row_limit = st.radio("How many rows to display?", options=["Top 100", "Top 500", "All"], index=1)
+        if row_limit == "Top 100":
+            st.dataframe(df.head(100), use_container_width=True)
+        elif row_limit == "Top 500":
+            st.dataframe(df.head(500), use_container_width=True)
+        else:
+            st.dataframe(df, use_container_width=True)
 
-    # ✅ Weighted average metrics
+    # Weighted metrics
     total_clicks = df["clicks"].sum()
     total_impressions = df["impressions"].sum()
     avg_ctr = (df["ctr"] * df["impressions"]).sum() / total_impressions if total_impressions else 0
@@ -82,7 +88,7 @@ if uploaded_file:
     with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
         st.markdown("""
         - **Each dot** = 1 keyword/query
-        - **X-axis (Position):** Lower = higher Google ranking (1 = top)
+        - **X-axis (Position):** Lower = better Google ranking (1 = top)
         - **Y-axis (CTR):** Higher = better click-through rate
 
         ### Interpreting:
@@ -92,8 +98,8 @@ if uploaded_file:
         - ❌ **Bottom-right:** Poor rank & CTR → deprioritize
         """)
 
-    # 📈 CTR vs Position using Plotly + trendline
-    st.markdown("### 📌 CTR vs Average Position (Interactive Plotly)")
+    # CTR vs Position using Plotly
+    st.markdown("### 📌 CTR vs Average Position (Interactive)")
     df_sorted = df.sort_values("position")
     fig = px.scatter(
         df_sorted,
@@ -105,7 +111,7 @@ if uploaded_file:
         opacity=0.6
     )
 
-    # Add trendline (linear regression)
+    # Add trendline
     if len(df_sorted) > 1:
         z = np.polyfit(df_sorted["position"], df_sorted["ctr"], 1)
         p = np.poly1d(z)
@@ -120,7 +126,7 @@ if uploaded_file:
         )
 
     fig.update_layout(
-        xaxis=dict(autorange="reversed"),  # Position 1 is best
+        xaxis=dict(autorange="reversed"),  # Position 1 = best
         template="plotly_white",
         showlegend=True
     )
@@ -133,13 +139,45 @@ if uploaded_file:
         opportunities.sort_values(by="impressions", ascending=False).head(10),
         use_container_width=True
     )
-
     st.download_button(
         label="📥 Download Opportunities as CSV",
         data=opportunities.to_csv(index=False),
         file_name="opportunity_keywords.csv",
         mime="text/csv"
     )
+
+    # 🚨 Keyword Alert System
+    st.markdown("### 🚨 Keyword Alerts (SEO Insights)")
+
+    # 1. Low CTR despite High Impressions
+    low_ctr_alerts = df[(df["impressions"] > 1000) & (df["ctr"] < 1.0)]
+    with st.expander("⚠️ Low CTR (<1%) with High Impressions (>1000)"):
+        st.dataframe(
+            low_ctr_alerts.sort_values(by="impressions", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ].head(20),
+            use_container_width=True
+        )
+
+    # 2. Big Impression Surge but Low Clicks
+    surge_alerts = df[(df["impressions"] > 1000) & (df["clicks"] < 10) & (df["ctr"] < 1.0)]
+    with st.expander("📈 Impression Surge but Low Clicks (<10)"):
+        st.dataframe(
+            surge_alerts.sort_values(by="impressions", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ].head(20),
+            use_container_width=True
+        )
+
+    # 3. High CTR but Low Rank (Potential Boosters)
+    booster_alerts = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
+    with st.expander("🚀 High CTR (>10%) but Low Ranking (Position >10)"):
+        st.dataframe(
+            booster_alerts.sort_values(by="ctr", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ].head(20),
+            use_container_width=True
+        )
 
 else:
     st.info("📌 Please upload a CSV file from Google Search Console > Performance > Queries tab.")
