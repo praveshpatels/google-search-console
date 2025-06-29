@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Google Search Console Data Analyzer
-Enhanced with CTR Trendline, Smart Table Toggle, and Keyword Alert System
+Enhanced with Bubble Chart, Trendline, Smart Table Toggle, and Keyword Alert System
 Developed by Pravesh Patel
 """
 
@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -91,27 +91,38 @@ if uploaded_file:
         - **X-axis (Position):** Lower = better Google ranking (1 = top)
         - **Y-axis (CTR):** Higher = better click-through rate
 
+        ### Bubble Chart:
+        - 🎨 Color = Impressions (visibility)
+        - 💥 Size = Clicks (engagement)
+
         ### Interpreting:
-        - ✅ **Top-left:** Strong keywords (high CTR & top ranking)
-        - ⚠️ **Bottom-left:** Good rank but low CTR → improve meta/title
-        - 🚀 **Top-right:** Low rank but strong CTR → boost content/rank
-        - ❌ **Bottom-right:** Poor rank & CTR → deprioritize
+        - ✅ **Top-left:** Strong keywords (high CTR & top rank)
+        - ⚠️ **Bottom-left:** Good rank, poor CTR (improve title/meta)
+        - 🚀 **Top-right:** Strong interest, low rank (optimize page)
         """)
 
-    # CTR vs Position using Plotly
-    st.markdown("### 📌 CTR vs Average Position (Interactive)")
+    # 📈 Enhanced Bubble Chart with Trendline
+    st.markdown("### 📌 CTR vs Average Position (Enhanced Bubble Chart)")
     df_sorted = df.sort_values("position")
     fig = px.scatter(
         df_sorted,
         x="position",
         y="ctr",
-        hover_data=["query", "clicks", "impressions"],
+        color="impressions",
+        size="clicks",
+        hover_data={
+            "query": True,
+            "clicks": True,
+            "impressions": True,
+            "ctr": True,
+            "position": True
+        },
         labels={"position": "Google Position", "ctr": "CTR (%)"},
-        title="CTR vs Position",
-        opacity=0.6
+        title="CTR vs Position (Bubble Size = Clicks, Color = Impressions)",
+        opacity=0.65,
+        color_continuous_scale="Turbo"
     )
 
-    # Add trendline
     if len(df_sorted) > 1:
         z = np.polyfit(df_sorted["position"], df_sorted["ctr"], 1)
         p = np.poly1d(z)
@@ -126,9 +137,10 @@ if uploaded_file:
         )
 
     fig.update_layout(
-        xaxis=dict(autorange="reversed"),  # Position 1 = best
+        xaxis=dict(autorange="reversed"),
         template="plotly_white",
-        showlegend=True
+        showlegend=True,
+        height=600
     )
     st.plotly_chart(fig, use_container_width=True)
 
