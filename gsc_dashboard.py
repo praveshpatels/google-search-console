@@ -17,6 +17,20 @@ st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wid
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
+# Sidebar: About the Developer
+st.sidebar.markdown("## 👨‍💻 About the Developer")
+st.sidebar.markdown("""
+Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
+
+🔍 I specialize in search engine optimization, digital analytics, and building intuitive tools that help marketers make better decisions using real data.
+
+🧠 With 8+ years of experience in SEO, I love turning raw data into actionable insights.
+
+💼 Currently working at Blow Horn Media, I also create tools like this one to simplify GSC analysis and uncover content opportunities.
+
+📬 [Visit praveshpatel.com](https://www.praveshpatel.com)
+""")
+
 # Upload file
 uploaded_file = st.file_uploader("📁 Upload GSC CSV file (Performance > Queries)", type=["csv"])
 
