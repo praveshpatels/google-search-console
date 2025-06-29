@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Google Search Console Data Analyzer
-Developed by Pravesh Patel
-Enhanced & Fixed by ChatGPT
+Supports both Queries and Pages CSV exports.
 """
 
 import streamlit as st
@@ -10,72 +9,73 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import io
 
-# Streamlit page settings
+# Page settings
 st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
-# File uploader
-uploaded_file = st.file_uploader("📁 Upload Google Search Console CSV Export (Performance > Queries or Pages)", type=["csv"])
+# File upload
+uploaded_file = st.file_uploader("📁 Upload GSC CSV Export (Performance > Queries or Pages)", type=["csv"])
 
 if uploaded_file:
-    # Read and clean the CSV content
     raw_data = uploaded_file.read().decode("utf-8")
     df = pd.read_csv(io.StringIO(raw_data))
 
-    # Normalize column names (to lowercase, strip spaces)
+    # Normalize column names
     df.columns = [col.strip().lower() for col in df.columns]
 
-    # Expected columns in GSC export
-    expected_columns = ["query", "clicks", "impressions", "ctr", "position"]
-    missing = [col for col in expected_columns if col not in df.columns]
-    if missing:
-        st.error(f"❌ Missing columns in CSV: {', '.join(missing)}. Please upload a raw export from GSC (Queries or Pages tab).")
+    # Detect whether it's Queries or Pages export
+    if "query" in df.columns:
+        keyword_col = "query"
+        title_label = "Queries"
+    elif "page" in df.columns:
+        keyword_col = "page"
+        title_label = "Pages"
+    else:
+        st.error("❌ CSV must contain either a 'Query' or 'Page' column.")
         st.stop()
 
-    # Clean and convert metrics
+    # Clean & convert core metrics
     for col in ["clicks", "impressions", "ctr", "position"]:
-        df[col] = df[col].astype(str).str.replace(",", "", regex=False).str.replace("%", "", regex=False)
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.replace(",", "", regex=False).str.replace("%", "", regex=False)
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        else:
+            st.error(f"❌ Missing expected column: {col}")
+            st.stop()
 
-    # Normalize CTR if in decimals
+    # Normalize CTR to percentage
     if df["ctr"].max() <= 1:
         df["ctr"] *= 100
 
-    # Drop rows with all metrics missing
+    # Remove rows with all metric data missing
     df.dropna(subset=["clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-    # Filters
+    # Filtering
     with st.expander("🔍 Filter Data"):
         min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
-        keyword_filter = st.text_input("Filter by Query (Optional)", "")
-
+        keyword_filter = st.text_input(f"Filter by {title_label[:-1]} (Optional)", "")
         df = df[df["impressions"] >= min_impr]
         if keyword_filter:
-            df = df[df["query"].str.contains(keyword_filter, case=False, na=False)]
+            df = df[df[keyword_col].str.contains(keyword_filter, case=False, na=False)]
 
     # Show raw data
     if st.checkbox("📄 Show Raw Data"):
         st.dataframe(df.head(25), use_container_width=True)
 
-    # KPI Cards
-    total_clicks = df["clicks"].sum()
-    total_impressions = df["impressions"].sum()
-    avg_ctr = df["ctr"].mean()
-    avg_position = df["position"].mean()
-
+    # KPIs
     st.markdown("### 📊 Overall Performance")
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Clicks", f"{total_clicks:,.0f}")
-    col2.metric("Total Impressions", f"{total_impressions:,.0f}")
-    col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
-    col4.metric("Avg. Position", f"{avg_position:.2f}")
+    col1.metric("Total Clicks", f"{df['clicks'].sum():,.0f}")
+    col2.metric("Total Impressions", f"{df['impressions'].sum():,.0f}")
+    col3.metric("Avg. CTR", f"{df['ctr'].mean():.2f}%")
+    col4.metric("Avg. Position", f"{df['position'].mean():.2f}")
 
-    # Top Queries
-    st.markdown("### 🔝 Top Queries by Clicks")
+    # Top Queries or Pages
+    st.markdown(f"### 🔝 Top {title_label} by Clicks")
     st.dataframe(df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
 
-    # CTR vs Position Scatter Plot
+    # CTR vs Position
     st.markdown("### 📌 CTR vs Average Position")
     fig, ax = plt.subplots()
     ax.scatter(df["position"], df["ctr"], alpha=0.5, c="blue", edgecolors="w")
@@ -86,12 +86,11 @@ if uploaded_file:
     ax.grid(True, linestyle="--", alpha=0.4)
     st.pyplot(fig)
 
-    # Opportunity Queries
+    # Opportunities
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
     opportunities = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]
     st.dataframe(opportunities.sort_values(by="impressions", ascending=False).head(10), use_container_width=True)
 
-    # Download Button
     st.download_button(
         label="📥 Download Opportunities as CSV",
         data=opportunities.to_csv(index=False),
@@ -100,4 +99,4 @@ if uploaded_file:
     )
 
 else:
-    st.info("📌 Please upload a CSV file exported directly from Google Search Console (Performance > Queries or Pages tab).")
+    st.info("📌 Please upload a CSV file exported from Google Search Console (Performance > Queries or Pages tab).")
