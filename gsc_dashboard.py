@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
