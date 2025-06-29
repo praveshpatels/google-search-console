@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer (Final Version with Chart Explanation)
+Google Search Console Data Analyzer (Final Version with Plotly & Trendline)
 Developed by Pravesh Patel
 """
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 import io
 
 # Page setup
@@ -76,30 +78,53 @@ if uploaded_file:
         use_container_width=True
     )
 
-    # CTR vs Position chart explanation
+    # CTR vs Position Chart Explanation
     with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
         st.markdown("""
-        - **Each dot** represents one keyword/query.
-        - **X-axis (Position):** Lower = better ranking (1 = top of Google).
-        - **Y-axis (CTR):** Higher = more clicks per impression.
-        
-        ### How to interpret:
-        - ✅ **Top-left:** Great keywords — ranked high & clicked often.
-        - ⚠️ **Bottom-left:** Good rank, but poor CTR — improve title/meta!
-        - 🚀 **Top-right:** Low rank but high CTR — try to boost ranking.
-        - ❌ **Bottom-right:** Low rank, low CTR — not priority.
+        - **Each dot** = 1 keyword/query
+        - **X-axis (Position):** Lower = higher Google ranking (1 = top)
+        - **Y-axis (CTR):** Higher = better click-through rate
+
+        ### Interpreting:
+        - ✅ **Top-left:** Strong keywords (high CTR & top ranking)
+        - ⚠️ **Bottom-left:** Good rank but low CTR → improve meta/title
+        - 🚀 **Top-right:** Low rank but strong CTR → boost content/rank
+        - ❌ **Bottom-right:** Poor rank & CTR → deprioritize
         """)
 
-    # CTR vs Position Chart
-    st.markdown("### 📌 CTR vs Average Position")
-    fig, ax = plt.subplots()
-    ax.scatter(df["position"], df["ctr"], alpha=0.5, c="blue", edgecolors="w")
-    ax.set_xlabel("Google Average Position (lower is better)")
-    ax.set_ylabel("Click-Through Rate (CTR %)")
-    ax.set_title("CTR vs Position")
-    ax.invert_xaxis()
-    ax.grid(True, linestyle="--", alpha=0.4)
-    st.pyplot(fig)
+    # 📈 CTR vs Position using Plotly + trendline
+    st.markdown("### 📌 CTR vs Average Position (Interactive Plotly)")
+    df_sorted = df.sort_values("position")
+    fig = px.scatter(
+        df_sorted,
+        x="position",
+        y="ctr",
+        hover_data=["query", "clicks", "impressions"],
+        labels={"position": "Google Position", "ctr": "CTR (%)"},
+        title="CTR vs Position",
+        opacity=0.6
+    )
+
+    # Add trendline (linear regression)
+    if len(df_sorted) > 1:
+        z = np.polyfit(df_sorted["position"], df_sorted["ctr"], 1)
+        p = np.poly1d(z)
+        fig.add_trace(
+            go.Scatter(
+                x=df_sorted["position"],
+                y=p(df_sorted["position"]),
+                mode="lines",
+                name="Trendline",
+                line=dict(color="red", dash="dash")
+            )
+        )
+
+    fig.update_layout(
+        xaxis=dict(autorange="reversed"),  # Position 1 is best
+        template="plotly_white",
+        showlegend=True
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
     # Opportunity keywords
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
