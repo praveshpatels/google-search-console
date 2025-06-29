@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer (Fixed Version)
-Handles 'Top queries' from GSC export and computes weighted averages.
+Google Search Console Data Analyzer (Final Version with Chart Explanation)
 Developed by Pravesh Patel
 """
 
@@ -42,7 +41,6 @@ if uploaded_file:
     df["ctr"] = df["ctr"].astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False)
     df["ctr"] = pd.to_numeric(df["ctr"], errors="coerce")
 
-    # Drop null metric rows
     df.dropna(subset=["clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
     # Optional filtering
@@ -57,10 +55,9 @@ if uploaded_file:
     if st.checkbox("📄 Show Raw Data"):
         st.dataframe(df.head(25), use_container_width=True)
 
-    # ✅ Calculate metrics with weighted average
+    # ✅ Weighted average metrics
     total_clicks = df["clicks"].sum()
     total_impressions = df["impressions"].sum()
-
     avg_ctr = (df["ctr"] * df["impressions"]).sum() / total_impressions if total_impressions else 0
     avg_position = (df["position"] * df["impressions"]).sum() / total_impressions if total_impressions else 0
 
@@ -72,19 +69,33 @@ if uploaded_file:
     col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
     col4.metric("Avg. Position", f"{avg_position:.2f}")
 
-    # Top Queries by Clicks
+    # Top Queries
     st.markdown("### 🔝 Top Queries by Clicks")
     st.dataframe(
         df.sort_values(by="clicks", ascending=False)[["query", "clicks", "impressions", "ctr", "position"]].head(10),
         use_container_width=True
     )
 
-    # CTR vs Position chart
+    # CTR vs Position chart explanation
+    with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
+        st.markdown("""
+        - **Each dot** represents one keyword/query.
+        - **X-axis (Position):** Lower = better ranking (1 = top of Google).
+        - **Y-axis (CTR):** Higher = more clicks per impression.
+        
+        ### How to interpret:
+        - ✅ **Top-left:** Great keywords — ranked high & clicked often.
+        - ⚠️ **Bottom-left:** Good rank, but poor CTR — improve title/meta!
+        - 🚀 **Top-right:** Low rank but high CTR — try to boost ranking.
+        - ❌ **Bottom-right:** Low rank, low CTR — not priority.
+        """)
+
+    # CTR vs Position Chart
     st.markdown("### 📌 CTR vs Average Position")
     fig, ax = plt.subplots()
     ax.scatter(df["position"], df["ctr"], alpha=0.5, c="blue", edgecolors="w")
-    ax.set_xlabel("Average Position")
-    ax.set_ylabel("CTR (%)")
+    ax.set_xlabel("Google Average Position (lower is better)")
+    ax.set_ylabel("Click-Through Rate (CTR %)")
     ax.set_title("CTR vs Position")
     ax.invert_xaxis()
     ax.grid(True, linestyle="--", alpha=0.4)
