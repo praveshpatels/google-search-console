@@ -28,7 +28,7 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 
 💼 Currently working at Blow Horn Media, I also create tools like this one to simplify GSC analysis and uncover content opportunities.
 
-📬 [Visit praveshpatel.com](https://www.praveshpatel.com)
+📬 [Visit praveshpatel.com](https://praveshpatel.com)
 """)
 
 # Upload file
