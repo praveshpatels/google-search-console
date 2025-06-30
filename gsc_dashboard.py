@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
 Google Search Console Data Analyzer
-Enhanced with Bubble Chart, Trendline, Smart Table Toggle, and Keyword Alert System
+Simplified version without CTR bubble chart or chart explanation
 Developed by Pravesh Patel
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io
 import plotly.express as px
 import plotly.graph_objects as go
-import io
 
 # Page setup
-st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -26,9 +26,9 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 
 🧠 With 8+ years of experience in SEO, I love turning raw data into actionable insights.
 
-💼 Currently working at Blow Horn Media, I created tools like this one to simplify GSC data analysis and uncover content opportunities.
+💼 Currently working at Blow Horn Media, I also create tools like this one to simplify GSC analysis and uncover content opportunities.
 
-📬 [Visit praveshpatel.com](https://praveshpatel.com)
+📬 [Visit praveshpatel.com](https://www.praveshpatel.com)
 """)
 
 # Upload file
@@ -97,66 +97,6 @@ if uploaded_file:
         df.sort_values(by="clicks", ascending=False)[["query", "clicks", "impressions", "ctr", "position"]].head(10),
         use_container_width=True
     )
-
-    # CTR vs Position Chart Explanation
-    with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
-        st.markdown("""
-        - **Each dot** = 1 keyword/query
-        - **X-axis (Position):** Lower = better Google ranking (1 = top)
-        - **Y-axis (CTR):** Higher = better click-through rate
-
-        ### Bubble Chart:
-        - 🎨 Color = Impressions (visibility)
-        - 💥 Size = Clicks (engagement)
-
-        ### Interpreting:
-        - ✅ **Top-left:** Strong keywords (high CTR & top rank)
-        - ⚠️ **Bottom-left:** Good rank, poor CTR (improve title/meta)
-        - 🚀 **Top-right:** Strong interest, low rank (optimize page)
-        """)
-
-    # 📈 Enhanced Bubble Chart with Trendline
-    st.markdown("### 📌 CTR vs Average Position (Enhanced Bubble Chart)")
-    df_sorted = df.sort_values("position")
-    fig = px.scatter(
-        df_sorted,
-        x="position",
-        y="ctr",
-        color="impressions",
-        size="clicks",
-        hover_data={
-            "query": True,
-            "clicks": True,
-            "impressions": True,
-            "ctr": True,
-            "position": True
-        },
-        labels={"position": "Google Position", "ctr": "CTR (%)"},
-        title="CTR vs Position (Bubble Size = Clicks, Color = Impressions)",
-        opacity=0.65,
-        color_continuous_scale="Turbo"
-    )
-
-    if len(df_sorted) > 1:
-        z = np.polyfit(df_sorted["position"], df_sorted["ctr"], 1)
-        p = np.poly1d(z)
-        fig.add_trace(
-            go.Scatter(
-                x=df_sorted["position"],
-                y=p(df_sorted["position"]),
-                mode="lines",
-                name="Trendline",
-                line=dict(color="red", dash="dash")
-            )
-        )
-
-    fig.update_layout(
-        xaxis=dict(autorange="reversed"),
-        template="plotly_white",
-        showlegend=True,
-        height=600
-    )
-    st.plotly_chart(fig, use_container_width=True)
 
     # Opportunity keywords
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
