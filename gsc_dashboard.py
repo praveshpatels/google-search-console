@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer (Full Version)
+Google Search Console Data Analyzer (Enhanced Version)
 Includes:
 - KPI metrics
 - Top queries
 - Opportunity keywords
-- New: Alerts Dashboard (Red/Orange/Green)
+- Alerts Dashboard (color-coded + human-readable rules)
 - Developer bio
 Developed by Pravesh Patel
 """
@@ -16,7 +16,7 @@ import numpy as np
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -93,25 +93,26 @@ if uploaded_file:
     col4.metric("Avg. Position", f"{avg_position:.2f}")
 
     # ========================
-    # 🔔 Alerts Dashboard
+    # 🔔 Alerts Dashboard (Enhanced with Descriptions)
     # ========================
     st.markdown("### 🔔 Alerts Dashboard (SEO Performance Signals)")
 
-    # Define alert rules
+    # Define alerts
     critical_drops = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
-    warnings = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5.0)]
+    warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
     wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
 
-    # Show alert counts
+    # Summary Cards
     col1, col2, col3 = st.columns(3)
     col1.metric("🔴 Critical Issues", f"{len(critical_drops):,}")
     col2.metric("🟠 Warnings", f"{len(warnings):,}")
     col3.metric("🟢 Potential Wins", f"{len(wins):,}")
 
-    # Expandable detail sections
+    # Critical Issues
     with st.expander("🔴 View Critical Issues"):
+        st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
         if critical_drops.empty:
-            st.info("No critical issues detected.")
+            st.info("No critical issues found.")
         else:
             st.dataframe(
                 critical_drops.sort_values(by="impressions", ascending=False)[
@@ -120,7 +121,9 @@ if uploaded_file:
                 use_container_width=True
             )
 
+    # Warnings
     with st.expander("🟠 View Warning Keywords"):
+        st.markdown("**Impression Surge but Low Clicks (<10)**")
         if warnings.empty:
             st.info("No warning keywords found.")
         else:
@@ -131,9 +134,11 @@ if uploaded_file:
                 use_container_width=True
             )
 
-    with st.expander("🟢 View High-CTR Low-Position Wins"):
+    # Wins
+    with st.expander("🟢 View High-CTR, Low-Rank Wins"):
+        st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
         if wins.empty:
-            st.info("No high-performing opportunity keywords found.")
+            st.info("No opportunity wins found.")
         else:
             st.dataframe(
                 wins.sort_values(by="ctr", ascending=False)[
