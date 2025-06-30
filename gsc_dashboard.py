@@ -14,7 +14,7 @@ import numpy as np
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -29,7 +29,7 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 
 💼 Currently working at Blow Horn Media, I also create tools like this one to simplify GSC analysis and uncover content opportunities.
 
-📬 [Visit praveshpatel.com](https://www.praveshpatel.com)
+📬 [Visit praveshpatel.com](https://praveshpatel.com)
 """)
 
 # Upload file
