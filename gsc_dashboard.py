@@ -157,3 +157,55 @@ if uploaded_file:
 
 else:
     st.info("📌 Please upload a CSV file from Google Search Console > Performance > Queries tab.")
+
+# ========================
+# 🔔 Alerts Dashboard
+# ========================
+
+st.markdown("### 🔔 Alerts Dashboard (SEO Performance Signals)")
+
+# 💡 Define alert conditions
+critical_drops = df[(df["ctr"] < 1) & (df["impressions"] > 1000)]  # Low CTR, high impressions
+warnings = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]  # Mid-rank, low CTR
+wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]  # High CTR, poor rank
+
+# 🔢 Show metric cards
+col1, col2, col3 = st.columns(3)
+col1.metric("🔴 Critical Issues", f"{len(critical_drops):,}")
+col2.metric("🟠 Warnings", f"{len(warnings):,}")
+col3.metric("🟢 Potential Wins", f"{len(wins):,}")
+
+# 📋 Expandable views for each category
+with st.expander("🔴 View Critical Issues"):
+    if critical_drops.empty:
+        st.info("No critical issues detected.")
+    else:
+        st.dataframe(
+            critical_drops.sort_values(by="impressions", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ],
+            use_container_width=True
+        )
+
+with st.expander("🟠 View Warning Keywords"):
+    if warnings.empty:
+        st.info("No warning keywords found.")
+    else:
+        st.dataframe(
+            warnings.sort_values(by="impressions", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ],
+            use_container_width=True
+        )
+
+with st.expander("🟢 View High-CTR Low-Position Wins"):
+    if wins.empty:
+        st.info("No high-performing opportunity keywords found.")
+    else:
+        st.dataframe(
+            wins.sort_values(by="ctr", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ],
+            use_container_width=True
+        )
+
