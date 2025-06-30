@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer
-Simplified version without CTR bubble chart or chart explanation
+Google Search Console Data Analyzer (Final Version)
+Includes:
+- Fixed CSV download for opportunities
+- Opportunity keyword count
+- Sidebar bio
 Developed by Pravesh Patel
 """
 
@@ -9,8 +12,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import io
-import plotly.express as px
-import plotly.graph_objects as go
 
 # Page setup
 st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
@@ -98,13 +99,20 @@ if uploaded_file:
         use_container_width=True
     )
 
-    # Opportunity keywords
+    # 🎯 Opportunity keywords — calculated after filters
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
     opportunities = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]
+
+    # ✅ Show total count
+    st.markdown(f"🔢 Total Opportunity Keywords Found: **{len(opportunities):,}**")
+
+    # Show only top 10 in UI
     st.dataframe(
         opportunities.sort_values(by="impressions", ascending=False).head(10),
         use_container_width=True
     )
+
+    # 📥 Download full filtered opportunities
     st.download_button(
         label="📥 Download Opportunities as CSV",
         data=opportunities.to_csv(index=False),
