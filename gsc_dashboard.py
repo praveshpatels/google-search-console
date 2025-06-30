@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer (Final Stable Version)
+Google Search Console Data Analyzer (Full Version)
 Includes:
-- Fixed Opportunity Keywords CSV & display
-- Keyword count
-- Sidebar bio
+- KPI metrics
+- Top queries
+- Opportunity keywords
+- New: Alerts Dashboard (Red/Orange/Green)
+- Developer bio
 Developed by Pravesh Patel
 """
 
@@ -14,7 +16,7 @@ import numpy as np
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -25,11 +27,9 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 
 🔍 I specialize in search engine optimization, digital analytics, and building intuitive tools that help marketers make better decisions using real data.
 
-🧠 With 8+ years of experience in SEO, I love turning raw data into actionable insights.
-
 💼 Currently working at Blow Horn Media, I also create tools like this one to simplify GSC analysis and uncover content opportunities.
 
-📬 [Visit praveshpatel.com](https://praveshpatel.com)
+📬 [Visit praveshpatel.com](https://www.praveshpatel.com)
 """)
 
 # Upload file
@@ -92,6 +92,56 @@ if uploaded_file:
     col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
     col4.metric("Avg. Position", f"{avg_position:.2f}")
 
+    # ========================
+    # 🔔 Alerts Dashboard
+    # ========================
+    st.markdown("### 🔔 Alerts Dashboard (SEO Performance Signals)")
+
+    # Define alert rules
+    critical_drops = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
+    warnings = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5.0)]
+    wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
+
+    # Show alert counts
+    col1, col2, col3 = st.columns(3)
+    col1.metric("🔴 Critical Issues", f"{len(critical_drops):,}")
+    col2.metric("🟠 Warnings", f"{len(warnings):,}")
+    col3.metric("🟢 Potential Wins", f"{len(wins):,}")
+
+    # Expandable detail sections
+    with st.expander("🔴 View Critical Issues"):
+        if critical_drops.empty:
+            st.info("No critical issues detected.")
+        else:
+            st.dataframe(
+                critical_drops.sort_values(by="impressions", ascending=False)[
+                    ["query", "clicks", "impressions", "ctr", "position"]
+                ],
+                use_container_width=True
+            )
+
+    with st.expander("🟠 View Warning Keywords"):
+        if warnings.empty:
+            st.info("No warning keywords found.")
+        else:
+            st.dataframe(
+                warnings.sort_values(by="impressions", ascending=False)[
+                    ["query", "clicks", "impressions", "ctr", "position"]
+                ],
+                use_container_width=True
+            )
+
+    with st.expander("🟢 View High-CTR Low-Position Wins"):
+        if wins.empty:
+            st.info("No high-performing opportunity keywords found.")
+        else:
+            st.dataframe(
+                wins.sort_values(by="ctr", ascending=False)[
+                    ["query", "clicks", "impressions", "ctr", "position"]
+                ],
+                use_container_width=True
+            )
+
     # Top Queries
     st.markdown("### 🔝 Top Queries by Clicks")
     st.dataframe(
@@ -99,11 +149,9 @@ if uploaded_file:
         use_container_width=True
     )
 
-    # 🎯 Opportunity keywords — calculated after filters
+    # Opportunity keywords — filtered display and CSV export
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
     opportunities = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]
-
-    # ✅ Show total count
     st.markdown(f"🔢 Total Opportunity Keywords Found: **{len(opportunities):,}**")
 
     if not opportunities.empty:
@@ -112,7 +160,6 @@ if uploaded_file:
             use_container_width=True
         )
 
-        # 📥 Download full filtered opportunities
         st.download_button(
             label="📥 Download Opportunities as CSV",
             data=opportunities.to_csv(index=False),
@@ -122,90 +169,5 @@ if uploaded_file:
     else:
         st.info("No opportunity keywords found based on the current filters.")
 
-    # 🚨 Keyword Alert System
-    st.markdown("### 🚨 Keyword Alerts (SEO Insights)")
-
-    # 1. Low CTR despite High Impressions
-    low_ctr_alerts = df[(df["impressions"] > 1000) & (df["ctr"] < 1.0)]
-    with st.expander("⚠️ Low CTR (<1%) with High Impressions (>1000)"):
-        st.dataframe(
-            low_ctr_alerts.sort_values(by="impressions", ascending=False)[
-                ["query", "clicks", "impressions", "ctr", "position"]
-            ].head(20),
-            use_container_width=True
-        )
-
-    # 2. Big Impression Surge but Low Clicks
-    surge_alerts = df[(df["impressions"] > 1000) & (df["clicks"] < 10) & (df["ctr"] < 1.0)]
-    with st.expander("📈 Impression Surge but Low Clicks (<10)"):
-        st.dataframe(
-            surge_alerts.sort_values(by="impressions", ascending=False)[
-                ["query", "clicks", "impressions", "ctr", "position"]
-            ].head(20),
-            use_container_width=True
-        )
-
-    # 3. High CTR but Low Rank (Potential Boosters)
-    booster_alerts = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
-    with st.expander("🚀 High CTR (>10%) but Low Ranking (Position >10)"):
-        st.dataframe(
-            booster_alerts.sort_values(by="ctr", ascending=False)[
-                ["query", "clicks", "impressions", "ctr", "position"]
-            ].head(20),
-            use_container_width=True
-        )
-
 else:
     st.info("📌 Please upload a CSV file from Google Search Console > Performance > Queries tab.")
-
-# ========================
-# 🔔 Alerts Dashboard
-# ========================
-
-st.markdown("### 🔔 Alerts Dashboard (SEO Performance Signals)")
-
-# 💡 Define alert conditions
-critical_drops = df[(df["ctr"] < 1) & (df["impressions"] > 1000)]  # Low CTR, high impressions
-warnings = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]  # Mid-rank, low CTR
-wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]  # High CTR, poor rank
-
-# 🔢 Show metric cards
-col1, col2, col3 = st.columns(3)
-col1.metric("🔴 Critical Issues", f"{len(critical_drops):,}")
-col2.metric("🟠 Warnings", f"{len(warnings):,}")
-col3.metric("🟢 Potential Wins", f"{len(wins):,}")
-
-# 📋 Expandable views for each category
-with st.expander("🔴 View Critical Issues"):
-    if critical_drops.empty:
-        st.info("No critical issues detected.")
-    else:
-        st.dataframe(
-            critical_drops.sort_values(by="impressions", ascending=False)[
-                ["query", "clicks", "impressions", "ctr", "position"]
-            ],
-            use_container_width=True
-        )
-
-with st.expander("🟠 View Warning Keywords"):
-    if warnings.empty:
-        st.info("No warning keywords found.")
-    else:
-        st.dataframe(
-            warnings.sort_values(by="impressions", ascending=False)[
-                ["query", "clicks", "impressions", "ctr", "position"]
-            ],
-            use_container_width=True
-        )
-
-with st.expander("🟢 View High-CTR Low-Position Wins"):
-    if wins.empty:
-        st.info("No high-performing opportunity keywords found.")
-    else:
-        st.dataframe(
-            wins.sort_values(by="ctr", ascending=False)[
-                ["query", "clicks", "impressions", "ctr", "position"]
-            ],
-            use_container_width=True
-        )
-
