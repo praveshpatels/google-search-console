@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Google Search Console Data Analyzer (Final Version)
+Google Search Console Data Analyzer (Final Stable Version)
 Includes:
-- Fixed CSV download for opportunities
-- Opportunity keyword count
+- Fixed Opportunity Keywords CSV & display
+- Keyword count
 - Sidebar bio
 Developed by Pravesh Patel
 """
@@ -106,19 +106,21 @@ if uploaded_file:
     # ✅ Show total count
     st.markdown(f"🔢 Total Opportunity Keywords Found: **{len(opportunities):,}**")
 
-    # Show only top 10 in UI
-    st.dataframe(
-        opportunities.sort_values(by="impressions", ascending=False).head(10),
-        use_container_width=True
-    )
+    if not opportunities.empty:
+        st.dataframe(
+            opportunities.sort_values(by="impressions", ascending=False),
+            use_container_width=True
+        )
 
-    # 📥 Download full filtered opportunities
-    st.download_button(
-        label="📥 Download Opportunities as CSV",
-        data=opportunities.to_csv(index=False),
-        file_name="opportunity_keywords.csv",
-        mime="text/csv"
-    )
+        # 📥 Download full filtered opportunities
+        st.download_button(
+            label="📥 Download Opportunities as CSV",
+            data=opportunities.to_csv(index=False),
+            file_name="opportunity_keywords.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No opportunity keywords found based on the current filters.")
 
     # 🚨 Keyword Alert System
     st.markdown("### 🚨 Keyword Alerts (SEO Insights)")
