@@ -175,4 +175,4 @@ if uploaded_file:
         st.info("No opportunity keywords found based on the current filters.")
 
 else:
-    st.info("📌 Please upload a CSV file from Google Search Console > Performance > Queries tab.")
+    st.info("📌 Please upload a CSV file from Google Search Console > Performance or Search Results > Export > Download CSV.")
