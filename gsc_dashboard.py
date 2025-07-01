@@ -33,7 +33,7 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 """)
 
 # Upload file
-uploaded_file = st.file_uploader("📁 Upload GSC CSV file (Performance > Queries)", type=["csv"])
+uploaded_file = st.file_uploader("📁 Upload Queries.csv file", type=["csv"])
 
 if uploaded_file:
     # Read and parse CSV
